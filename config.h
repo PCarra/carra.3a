@@ -1,4 +1,4 @@
-/* File: runsim.c
+/* File: config.c
  * Author: Patrick Carra
  * Class: CS-4760
  * Project 2

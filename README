@@ -2,10 +2,9 @@
 /* File: README
  * Author: Patrick Carra
  * Class: CS-4760
- * Project 2
+ * Project 3
  */
 
-RUN PROG USING: ./runsim [numproc] < testing.data
-INCOMPLETE: I attempted bakery algorithm but I believe there is insufficient implementation instructions and no examples in book to integrate into existing book project.
-COMMENTS: I feel better about this project but still believe that the additional requirements outside of the scope of the book project make these projects unnecessarily complex and detract from learning in more detail about the specific Operating System fundamentals.
-BUGS: The iteration of the loop in logmsg fails from time to time. Not sure why
+RUN PROG USING: ./runsim [-t n] [numproc] < testing.data
+INCOMPLETE: I think I completed all the requirements for this project however project 2 was not graded so I'm hoping what this was based off was correct?
+COMMENTS: Compared to the first two projects I felt this one went well there was plenty of time to complete and the extent of the requirements was not excessive

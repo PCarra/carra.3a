@@ -42,6 +42,7 @@ void setsembuf(struct sembuf *s, int num, int op, int flg){
 int lock_sem(int semid, struct sembuf lockop){
 	if(semop(semid, &lockop, 1)==1){
 		fprintf(stderr, "Error: Failed to lock\n, %s", strerror(errno));
+		perror("runsim.c: Error: Failed to lock\n");
 		exit(1);
 	}
 	return 0;
@@ -50,6 +51,7 @@ int lock_sem(int semid, struct sembuf lockop){
 int unlock_sem(int semid, struct sembuf lockop){
 	if(semop(semid, &lockop, 1)==1){
 		fprintf(stderr, "Error: Failed to unlock\n, %s", strerror(errno));
+		perror("runsim.c: Error: Failed to unlock\n");
 		exit(1);
 	}
 	return 0;
@@ -58,6 +60,7 @@ int unlock_sem(int semid, struct sembuf lockop){
 int detachandremove(int sharedmem){
 	if (shmctl(sharedmem, IPC_RMID, NULL)==-1){
 		fprintf(stderr, "Error: Failed to remove %d, %s\n", sharedmem, strerror(errno));
+		perror("runsim.c: Error: Failed to remove shared mem");
 		return -1;
 	}
 	return 0;
@@ -83,6 +86,7 @@ void docommand(char *cline){
 	//printf("License count: %d\n", license->nlicenses);
 	if((childpid=fork())<0){
 		fprintf(stderr, "Error: Failed to create child process, %s\n", strerror(errno));
+		perror("runsim.c: Error: Failed to create child process");
 		exit(1);
         }
 	else if(childpid==0){
@@ -162,6 +166,7 @@ static int setupitimer(void){
 int getmem(char *progname){
 	if ((shmid=shmget(IPC_PRIVATE, sizeof(int), 0666 | IPC_CREAT))==-1){
 		fprintf(stderr, "%s: Error: Failed to create shared memory segment for license\n, %s", progname, strerror(errno));
+		perror("runsim.c: Error: Failed to create shared memory segment for license\n");
 		return 1;
 	}
 	return 0;
@@ -172,6 +177,7 @@ int attachmem(char *progname){
 		fprintf(stderr, "%s: Error: Failed to attach shared memory segment for license\n, %s", progname, strerror(errno));
                 if(shmctl(shmid, IPC_RMID, NULL)==-1){
 			fprintf(stderr, "%s: Error: Failed to remove shared memory segment for license\n, %s", progname, strerror(errno));
+			perror("runsim.c: Error: Failed to remove shared memory segment for license\n");
                         exit(EXIT_FAILURE);
                 }
                 return 1;
@@ -185,6 +191,7 @@ int initsem(char *progname){
 	if(semop(semid, &licenseunlock, 1)==-1){
 		if(semctl(semid, 0, IPC_RMID)<0){
 			fprintf(stderr, "%s: Error: Failed to remove shared memory segment for license\n, %s", progname, strerror(errno));
+			perror("runsim.c: Error: Failed to remove sharedd memory segment for license\n");
 			return 1;
 		}
 	}
@@ -205,6 +212,7 @@ int main (int argc, char *argv[]) {
 				break;
 			case 't':
 				max_time = atoi(optarg);
+				alarm(max_time);
 				break;
 			case ':':
 				printf("Option needs a value");
@@ -218,10 +226,12 @@ int main (int argc, char *argv[]) {
 	signal(SIGINT, INThandler);
 	if (setupinterrupt() == -1){
 		fprintf(stderr, "%s: Error: Failed to set up handler for SIGPROF\n, %s", argv[0], strerror(errno));
+		perror("runsim.c: Error: Failed to set up handler for SIGPROF\n");
 		return 1;
 	}
 	if (setupitimer() == -1){
 		fprintf(stderr, "%s: Error: Failed to set up ITIMER_PROF interval timer\n, %s", argv[0], strerror(errno));
+		perror("runsim.c: Error: Failed to set up ITIMER_PROF interval timer\n");
 		return 1;
 	}
 	//check command line arguments and set default 
@@ -231,20 +241,24 @@ int main (int argc, char *argv[]) {
 	//get an id to the shared segments
 	if(getmem(argv[0])!=0){
 		fprintf(stderr, "%s: Error: Failed to create shared memory\n, %s", argv[0], strerror(errno));
+		perror("runsim.c: Error: Failed to create shared memory\n");
 		return 1;
 	}
 	//attach shared memory
 	if(attachmem(argv[0])!=0){
 		fprintf(stderr, "%s: Error: Failed to attach shared memory\n, %s", argv[0], strerror(errno));
+		perror("runsim.c: Error: Failed to attach shared memory\n");
 		return 1;
 	}
 	//populate shared memory with command line argument for the number of available licenses
 	if(initlicense(num_proc)!=0){ 
 		fprintf(stderr, "%s: Error: Failed to initiate license\n, %s", argv[0], strerror(errno));
+		perror("runsim.c: Error: Failed to initiate license\n");
 		return 1;
 	}
 	if(initlogsem()!=0){ 
 		fprintf(stderr, "%s: Error: Failed to initiate logsem\n, %s", argv[0], strerror(errno));
+		perror("runsim.c Error: Failed to initiate logsem\n");
 		return 1;
 	}
 	printf("License count: %d\n", license->nlicenses);
@@ -252,6 +266,7 @@ int main (int argc, char *argv[]) {
 	lock_sem(semid, licenselock);
 	if(getlicense()!=0){
 		fprintf(stderr, "%s: Error: Failed to retrieve license\n, %s", argv[0], strerror(errno));
+		perror("runsim.c Error: Failed to retrieve license\n");
 	}
 	unlock_sem(semid, licenseunlock);
 	//read from stdin
@@ -261,6 +276,7 @@ int main (int argc, char *argv[]) {
                 	childpid = wait(NULL);
 			if(childpid!=-1){
 				fprintf(stderr, "%s: Error: parent %ld waited for child with pid %d because max processes reached\n", argv[0], (long)getpid(), childpid);
+				perror("runsim.c: Error: parent waited for child because max processes reached");
 			}
                         pr_count--;
                 }
@@ -270,17 +286,21 @@ int main (int argc, char *argv[]) {
 			fprintf(stderr, "%s: Error: Failed to create child process\n", argv[0]);
 			if(detachandremove(shmid) == -1) {
 				fprintf(stderr, "%s: Error: Failed to destroy shared memory segment\n", argv[0]);
+				perror("runsim.c: Error: Failed to destroy shared memory segment\n");
 			}
 			if(detachandremove(semid) == -1) {
 				fprintf(stderr, "%s: Error: Failed to destroy shared memory segment\n", argv[0]);
+				perror("runsim.c: Error: Failed to destroy shared memory segment\n");
 			}
 			exit(1);
                 }
 		else if(childpid==0){
 			if ((license = (struct License *)shmat(shmid, NULL, 0)) == (struct License *)-1){
 				fprintf(stderr, "%s: Error: Failed to attach shared memory segment\n", argv[0]);
+				perror("runsim.c: Error: Failed to attach shared memory segment=n");
 				if(shmctl(shmid, IPC_RMID, NULL)==-1){
 					fprintf(stderr, "%s: Error: Failed to remove memory segment\n", argv[0]);
+					perror("runsim.c: Error: Failed to remove memory segment\n");
 					exit(EXIT_FAILURE);
 				}
 				return 1;
@@ -315,6 +335,7 @@ int main (int argc, char *argv[]) {
 	if(childpid>=0){
 		if(detachandremove(shmid) == -1) {
 			fprintf(stderr, "%s: Error: HERE Failed to destroy shared memory segment\n", argv[0]);
+			perror("runsim.c: Error: HERE Failed to destroy shared memory segment\n");
 			return 1;
 		}
 		destroysem(semid);

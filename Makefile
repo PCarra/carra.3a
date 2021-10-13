@@ -5,35 +5,15 @@
 # T1: T1.c
 # 	gcc -o T1 T1.c
 
-target1 = runsim
-target2 = testsim
-target3 = licenseobj
-target4 = logfile
-objs1 = runsim.o licenseobj.o logfile.o
-objs2 = testsim.o licenseobj.o logfile.o
 
-deps = $(patsubst %.o,%.h,$(objs))
--include $(deps)
-DEPFLAGS = -MMD -MF $(@:.o=.h)
 
 CC = gcc
 CFLAGS = -Wall
+objects = runsim testsim
+all: $(objects)
 
-all: $(target1) $(target2)
+$(objects): %: %.c
+	$(CC) $(CFLAGS) $< -L. -llogfile -llicenseobj -o $@
 
-$(target1): $(objs1)
-	$(CC) $(CFLAGS) -o $@ $^
-
-$(target2): $(objs2)
-	$(CC) $(CFLAGS) -o $@ $^
-
-$(target3): $(objs3)
-	$(CC) $(CFLAGS) -o $@ $^
-
-$(target4): $(objs4)
-	$(CC) $(CFLAGS) -o $@ $^
-#%.o: %.c
-	#$(CC) $(CFLAGS) -c $< $(DEPFLAGS)
 clean:
-	rm -f $(target1) $(objs) $(deps)
-	rm -f $(target2) $(objs) $(deps)
+	rm *.o $(objects)
